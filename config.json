@@ -7,12 +7,14 @@
         {
           "Path": "B:\\Backup_Disk1\\MyData",
           "Id": "RED_DRIVE_01",
-          "DeleteFolder": "S:\\Backup_Disk1\\_deleted"
+          "DeleteFolder": "S:\\Backup_Disk1\\_deleted",
+          "UseMD5ForChecking": true
         },
         {
           "Path": "X:\\Backup_Disk2\\MyData",
-          "Id": "BLUE_DRIVE_02", 
-          "DeleteFolder": ""
+          "Id": "BLUE_DRIVE_02",
+          "DeleteFolder": "",
+          "UseMD5ForChecking": false
         }
       ]
     }
