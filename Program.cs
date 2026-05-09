@@ -19,6 +19,7 @@ namespace SimpleBackupSystem
         private const string BackupIdFileName = ".backup_id";
         static BackupConfig? config;
 
+        static int filesProcessed = 0;
         static int filesCopied = 0;
         static int filesDeleted = 0;
         static int errorsCount = 0;
@@ -67,14 +68,20 @@ namespace SimpleBackupSystem
 
                     if (ValidateTargetId(target))
                     {
-                        string currentDeletedDir = target.DeleteFolder; 
+                        string currentDeletedDir = target.DeleteFolder;
+                        Logger.Info($"Getting file list...");
                         SyncDirectories(job.Source, target.Path);
+                        Logger.Info($"Cleanup...");
                         CleanupTarget(job.Source, target.Path, currentDeletedDir);
                     }
+                    Logger.Info($"--- SOURCE {jobNumber} FINISHED ---");
+
+                    //TODO: add job folder statistic
                 }
             }
-
+            // TODO: add time working
             Logger.Info($"=== TOTAL REPORT ===");
+            Logger.Info($"Processed: {filesProcessed}");
             Logger.Info($"Copied: {filesCopied}");
             Logger.Info($"Moved to Trash Folder: {filesDeleted}");
             Logger.Info($"Errors: {errorsCount}\n");
@@ -108,7 +115,12 @@ namespace SimpleBackupSystem
                 if (ShouldCopy(sFile, tFile))
                 {
                     try 
-                    { 
+                    {
+                        string targetFolder = Path.GetDirectoryName(tFile);
+                        if (!Directory.Exists(targetFolder))
+                        {
+                            Directory.CreateDirectory(targetFolder);
+                        }
                         File.Copy(sFile, tFile, true); 
                         Logger.Info($"   [COPY OK] \"{Path.GetFileName(sFile)}\""); 
                         filesCopied++; 
@@ -198,8 +210,11 @@ namespace SimpleBackupSystem
 
         static bool ShouldCopy(string sourceFile, string targetFile)
         {
+            filesProcessed++;
+            Logger.Debug($"Check ({filesProcessed}): {sourceFile}");
             if (!File.Exists(targetFile)) return true;
-            FileInfo fiS = new FileInfo(sourceFile); FileInfo fiT = new FileInfo(targetFile);
+            FileInfo fiS = new FileInfo(sourceFile); 
+            FileInfo fiT = new FileInfo(targetFile);
             if (fiS.Length != fiT.Length) return true;
             return GetFileHash(sourceFile) != GetFileHash(targetFile);
         }
