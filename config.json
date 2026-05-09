@@ -1,0 +1,21 @@
+{
+  "DeletedFolderLimitGb": 2.0,
+  "Jobs": [
+    {
+      "Source": "C:\\MyData",
+      "Targets": [
+        {
+          "Path": "B:\\Backup_Disk1\\MyData",
+          "Id": "RED_DRIVE_01",
+          "DeleteFolder": "S:\\Backup_Disk1\\_deleted"
+        },
+        {
+          "Path": "X:\\Backup_Disk2\\MyData",
+          "Id": "BLUE_DRIVE_02", 
+          "DeleteFolder": ""
+        }
+      ]
+    }
+  ]
+}
+
