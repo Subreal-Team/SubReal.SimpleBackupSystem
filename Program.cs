@@ -1,6 +1,7 @@
 ﻿using SubRealTeam.ConsoleUtility.Common.Logging;
 using System.Security.Cryptography;
 using System.Text.Json;
+using System.Diagnostics;
 
 
 namespace SimpleBackupSystem
@@ -41,6 +42,7 @@ namespace SimpleBackupSystem
             Logger.Info($"--- START SimpleBackupSystem v.0.0.1");
 
             var jobNumber = 0;
+            Stopwatch stopwatch = Stopwatch.StartNew();
             foreach (var job in config.Jobs)
             {   
                 
@@ -70,6 +72,7 @@ namespace SimpleBackupSystem
                     {
                         string currentDeletedDir = target.DeleteFolder;
                         Logger.Info($"Getting file list...");
+                        //TODO: Think about Making a list of the source, and already work with it on target. It should speed up
                         SyncDirectories(job.Source, target.Path);
                         Logger.Info($"Cleanup...");
                         CleanupTarget(job.Source, target.Path, currentDeletedDir);
@@ -79,8 +82,12 @@ namespace SimpleBackupSystem
                     //TODO: add job folder statistic
                 }
             }
-            // TODO: add time working
+            stopwatch.Stop();
+            TimeSpan ts = stopwatch.Elapsed;
+            string elapsedTime = string.Format("{0:00}:{1:00}:{2:00}",
+                ts.Hours, ts.Minutes, ts.Seconds);
             Logger.Info($"=== TOTAL REPORT ===");
+            Logger.Info($"Processing time: {elapsedTime}");
             Logger.Info($"Processed: {filesProcessed}");
             Logger.Info($"Copied: {filesCopied}");
             Logger.Info($"Moved to Trash Folder: {filesDeleted}");
