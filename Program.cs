@@ -52,7 +52,7 @@ namespace SimpleBackupSystem
             Logger.SetLogLevelForInstance<FileLogger>(LogLevel.Debug);
 
             Logger.AddInstance(new ConsoleLogger());
-            Logger.SetLogLevelForInstance<ConsoleLogger>(LogLevel.Debug);
+            Logger.SetLogLevelForInstance<ConsoleLogger>(LogLevel.Info);
 
             Logger.Info($"--- START SimpleBackupSystem v.0.0.2 ---");
 
@@ -92,7 +92,7 @@ namespace SimpleBackupSystem
                     if (ValidateTargetId(target))
                     {
                         string currentDeletedDir = target.DeleteFolder;
-                        Logger.Info($"Getting file list...");
+                        Logger.Info($"Processing...");
                         SyncDirectories(job.Source, target.Path, sourceFileCache, target.UseMD5ForChecking);
                         Logger.Info($"Cleanup...");
                         CleanupTarget(job.Source, target.Path, currentDeletedDir);
