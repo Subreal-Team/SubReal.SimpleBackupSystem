@@ -1,7 +1,8 @@
 ﻿using SubRealTeam.ConsoleUtility.Common.Logging;
+using System.Diagnostics;
 using System.Security.Cryptography;
 using System.Text.Json;
-using System.Diagnostics;
+using System.Text.Json.Serialization;
 
 namespace SimpleBackupSystem
 {
@@ -17,6 +18,8 @@ namespace SimpleBackupSystem
     {
         public bool DryRun { get; set; }
         public double DeletedFolderLimitGb { get; set; }
+        public string FileLogLevel { get; set; } = "Debug";
+        public string ConsoleLogLevel { get; set; } = "Info";
         public List<BackupJob> Jobs { get; set; }
     }
 
@@ -48,13 +51,29 @@ namespace SimpleBackupSystem
 
             if (!LoadConfig()) return;
 
+            // Настройка логгеров на основе конфига
+            // 1. Настройка файлового логгера
             Logger.AddInstance(new FileLogger(filePath: logsDir));
-            Logger.SetLogLevelForInstance<FileLogger>(LogLevel.Debug);
 
+            // Парсим уровень лога из строки. Если не получилось — ставим Debug
+            if (!Enum.TryParse<LogLevel>(config.FileLogLevel, true, out var fileLevel))
+            {
+                fileLevel = LogLevel.Debug;
+            }
+            Logger.SetLogLevelForInstance<FileLogger>(fileLevel);
+
+
+            // 2. Настройка консольного логгера
             Logger.AddInstance(new ConsoleLogger());
-            Logger.SetLogLevelForInstance<ConsoleLogger>(LogLevel.Info);
 
-            Logger.Info($"--- START SimpleBackupSystem v.0.0.2 ---");
+            // Парсим уровень лога из строки. Если не получилось — ставим Info
+            if (!Enum.TryParse<LogLevel>(config.ConsoleLogLevel, true, out var consoleLevel))
+            {
+                consoleLevel = LogLevel.Info;
+            }
+            Logger.SetLogLevelForInstance<ConsoleLogger>(consoleLevel);
+
+            Logger.Info($"--- START SimpleBackupSystem v.0.0.3 ---");
 
             var jobNumber = 0;
             Stopwatch stopwatch = Stopwatch.StartNew();
@@ -361,8 +380,21 @@ namespace SimpleBackupSystem
             {
                 Console.WriteLine("Config not found!"); return false;
             }
-            config = JsonSerializer.Deserialize<BackupConfig>(File.ReadAllText(path));
-            return true;
+
+            try
+            {
+                var options = new JsonSerializerOptions
+                {
+                    PropertyNameCaseInsensitive = true
+                };
+                config = JsonSerializer.Deserialize<BackupConfig>(File.ReadAllText(path), options);
+                return config != null;
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error loading config: {ex.Message}");
+                return false;
+            }
         }
     }
 }
