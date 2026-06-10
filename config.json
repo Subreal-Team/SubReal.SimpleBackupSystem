@@ -1,5 +1,7 @@
 {
   "DeletedFolderLimitGb": 2.0,
+  "FileLogLevel": "Info",
+  "ConsoleLogLevel": "Info",
   "Jobs": [
     {
       "Source": "C:\\MyData",
