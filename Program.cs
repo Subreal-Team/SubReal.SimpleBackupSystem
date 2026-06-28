@@ -115,6 +115,13 @@ namespace SimpleBackupSystem
                         SyncDirectories(job.Source, target.Path, sourceFileCache, target.UseMD5ForChecking);
                         Logger.Info($"Cleanup...");
                         CleanupTarget(job.Source, target.Path, currentDeletedDir);
+                        // Если включен лимит корзины
+                        if (!string.IsNullOrEmpty(currentDeletedDir) && config.DeletedFolderLimitGb > 0)
+                        {
+                            Logger.Info($"Checking trash folder size limit...");
+                            EnforceTrashFolderLimit(currentDeletedDir);
+                        }
+
                     }
                     Logger.Info($"--- SOURCE {jobNumber} FINISHED ---");
                 }
@@ -396,5 +403,99 @@ namespace SimpleBackupSystem
                 return false;
             }
         }
+        static void EnforceTrashFolderLimit(string trashFolderPath)
+        {
+            if (!Directory.Exists(trashFolderPath)) return;
+
+            try
+            {
+               long limitBytes = (long)(config.DeletedFolderLimitGb * 1024 * 1024 * 1024);
+
+                var directoryInfo = new DirectoryInfo(trashFolderPath);
+                var files = directoryInfo.GetFiles("*", SearchOption.AllDirectories);
+
+                long currentSize = 0;
+                foreach (var file in files)
+                {
+                    currentSize += file.Length;
+                }
+                
+                double currentSizeGb = (double)currentSize / (1024 * 1024 * 1024);
+                Logger.Debug($"Current trash folder size: {currentSizeGb:F2} GB. Limit: {config.DeletedFolderLimitGb:F2} GB");
+
+                if (currentSize <= limitBytes)
+                {
+                    Logger.Debug("Trash folder size is within limits.");
+                    return;
+                }
+
+                Logger.Info($"Trash folder limit exceeded! Cleaning up oldest files...");
+
+                var sortedFiles = files.OrderBy(f => f.LastWriteTime).ToList();
+
+                foreach (var file in sortedFiles)
+                {
+                    if (currentSize <= limitBytes) break;
+
+                    long fileSize = file.Length;
+                    string relativePath = file.FullName.Substring(trashFolderPath.Length).TrimStart(Path.DirectorySeparatorChar);
+
+                    Logger.Info($"[CLEANUP] Removing oldest file: {relativePath} ({fileSize / 1024.0 / 1024.0:F2} MB)");
+
+                    if (!config.DryRun)
+                    {
+                        try
+                        {
+                            file.Delete();
+                            currentSize -= fileSize;
+                            filesDeleted++; 
+                        }
+                        catch (Exception ex)
+                        {
+                            Logger.Error($"Failed to delete file from trash \"{file.FullName}\". Error: {ex.Message}");
+                            errorsCount++;
+                        }
+                    }
+                    else
+                    {
+                        // DryRun 
+                        currentSize -= fileSize;
+                    }
+                }
+
+                // Очищаем пустые папки
+                if (!config.DryRun)
+                {
+                    DeleteEmptyDirectories(trashFolderPath);
+                }
+            }
+            catch (Exception ex)
+            {
+                Logger.Error($"Error during trash folder cleanup: {ex.Message}");
+                errorsCount++;
+            }
+        }
+
+        // рекурсивная очистка внутри корзины
+        static void DeleteEmptyDirectories(string startDir)
+        {
+            foreach (var directory in Directory.GetDirectories(startDir))
+            {
+                DeleteEmptyDirectories(directory);
+                if (Directory.GetFileSystemEntries(directory).Length == 0)
+                {
+                    try
+                    {
+                        Directory.Delete(directory);
+                        Logger.Debug($"Deleted empty directory in trash: {directory}");
+                    }
+                    catch (Exception ex)
+                    {
+                        Logger.Error($"Failed to delete empty folder \"{directory}\". Error: {ex.Message}");
+                    }
+                }
+            }
+        }
+
     }
 }
