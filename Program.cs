@@ -1,8 +1,9 @@
-﻿using SubRealTeam.ConsoleUtility.Common.Logging;
+using SubRealTeam.ConsoleUtility.Common.Logging;
 using System.Diagnostics;
 using System.Security.Cryptography;
 using System.Text.Json;
 using System.Text.Json.Serialization;
+using System.Reflection;
 
 namespace SimpleBackupSystem
 {
@@ -43,6 +44,8 @@ namespace SimpleBackupSystem
         static int filesDeleted = 0;
         static int errorsCount = 0;
 
+        static string Version => Assembly.GetExecutingAssembly().GetName().Version?.ToString() ?? "0.0.0";
+
         static void Main()
         {
             var logsDir = Path.Combine(Directory.GetCurrentDirectory(), "logs");
@@ -73,7 +76,7 @@ namespace SimpleBackupSystem
             }
             Logger.SetLogLevelForInstance<ConsoleLogger>(consoleLevel);
 
-            Logger.Info($"--- START SimpleBackupSystem v.0.0.3 ---");
+            Logger.Info($"--- START SimpleBackupSystem v.{Version} ---");
 
             var jobNumber = 0;
             Stopwatch stopwatch = Stopwatch.StartNew();
